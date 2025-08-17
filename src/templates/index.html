@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Courses</title>
+</head>
+<body>
+    <h2>Courses</h2>
+    <ul id="coursesList"></ul>
+
+    <script>
+        async function loadCourses() {
+            const token = localStorage.getItem("access");
+            if (!token) {
+                alert("Login first");
+                return;
+            }
+            const res = await fetch("/api/courses/", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            const data = await res.json();
+            const list = document.getElementById("coursesList");
+            list.innerHTML = "";
+            data.forEach(course => {
+                const li = document.createElement("li");
+                li.innerText = course.title + " (Teacher: " + course.teacher.username + ")";
+                list.appendChild(li);
+            });
+        }
+        loadCourses();
+    </script>
+</body>
+</html>
