@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -20,6 +21,12 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Токен действителен 1 час
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Refresh токен действителен 1 день
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': False,
+}
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,7 +41,8 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "users",
     "courses",
-    "learning"
+    "learning",
+    "corsheaders"
 ]
 
 AUTH_USER_MODEL = "users.User"
@@ -47,6 +55,11 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  
 ]
 
 ROOT_URLCONF = "management_system.urls"
