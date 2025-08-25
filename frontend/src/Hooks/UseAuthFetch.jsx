@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useAuth } from "@Contexts/AuthContext";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"; // Убедись, что BASE_URL определён
 
 export function useAuthFetch() {
   const { authTokens, logout } = useAuth();
@@ -18,7 +18,7 @@ export function useAuthFetch() {
         Authorization: `Bearer ${authTokens.access}`,
       };
 
-      const fullUrl = `${BASE_URL}${url}`;
+      const fullUrl = `${BASE_URL}${url.startsWith("/") ? url : "/" + url}`;
 
       const response = await fetch(fullUrl, { ...options, headers });
 
@@ -38,7 +38,7 @@ export function useAuthFetch() {
         return response.json();
       }
 
-      return response;
+      return response.text(); // Для не-JSON ответов
     },
     [authTokens, logout]
   );

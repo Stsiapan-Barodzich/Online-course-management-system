@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useAuth } from "@Contexts/AuthContext";
 
 const AddCourseForm = ({ onSuccess }) => {
-  const { accessToken } = useAuth();
+  const { authTokens } = useAuth();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState(null);
@@ -25,7 +25,7 @@ const AddCourseForm = ({ onSuccess }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${authTokens?.access}`,
         },
         body: JSON.stringify({
           title,

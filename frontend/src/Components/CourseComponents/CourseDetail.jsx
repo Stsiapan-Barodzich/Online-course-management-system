@@ -1,47 +1,40 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
+import { useAuth } from "@Contexts/AuthContext";
 import AddLectureForm from "../LectureComponents/AddLectureForm.jsx";
 import AddHomeworkForm from "../HomeworkComponents/AddHomeworkForm.jsx";
 import AddSubmissionForm from "../SubmissionComponents/AddSubmissionForm.jsx";
 
-const CourseDetail = ({ courseId }) => {
+const BASE_URL = "http://localhost:8000";
+
+const CourseDetail = () => {
+  const { courseId } = useParams();
+  const { authTokens, user } = useAuth();
   const [course, setCourse] = useState(null);
   const [lectures, setLectures] = useState([]);
   const [selectedLecture, setSelectedLecture] = useState(null);
-  const [role, setRole] = useState(null);
-  const token = localStorage.getItem("access");
 
   useEffect(() => {
-    loadCourse();
-    loadUserRole();
-  }, []);
-
-  const loadUserRole = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get("/api/v1/me/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setRole(res.data.role);
-    } catch (err) {
-      console.error(err);
+    if (authTokens?.access) {
+      loadCourse();
     }
-  };
+  }, [authTokens]);
 
   const loadCourse = async () => {
     try {
-      const res = await axios.get(`/api/v1/courses/${courseId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const headers = { Authorization: `Bearer ${authTokens.access}` };
+
+      // Получаем курс
+      const res = await axios.get(`${BASE_URL}/api/v1/courses/${courseId}/`, { headers });
       setCourse(res.data);
 
-      // Load lectures
-      const lectureRes = await axios.get(`/api/v1/lectures/?course=${courseId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Получаем лекции курса
+      const lectureRes = await axios.get(`${BASE_URL}/api/v1/lectures/?course=${courseId}`, { headers });
       setLectures(lectureRes.data);
     } catch (err) {
       console.error(err);
+      alert("Failed to load course");
     }
   };
 
@@ -56,7 +49,9 @@ const CourseDetail = ({ courseId }) => {
       <h2>Course: {course.title}</h2>
       <p>Teacher: {course.teacher.username}</p>
 
-      {role === "TEACHER" && <AddLectureForm courseId={courseId} onLectureAdded={loadCourse} />}
+      {user?.role === "TEACHER" && (
+        <AddLectureForm courseId={courseId} onLectureAdded={loadCourse} />
+      )}
 
       <h3>Lectures</h3>
       <ul>
@@ -70,8 +65,10 @@ const CourseDetail = ({ courseId }) => {
       {selectedLecture && (
         <div>
           <h4>Selected Lecture: {selectedLecture.topic}</h4>
-          {role === "TEACHER" && <AddHomeworkForm lectureId={selectedLecture.id} />}
-          {role === "STUDENT" && <AddSubmissionForm homeworkId={selectedLecture.homework?.id} />}
+          {user?.role === "TEACHER" && <AddHomeworkForm lectureId={selectedLecture.id} />}
+          {user?.role === "STUDENT" && selectedLecture.homework && (
+            <AddSubmissionForm homeworkId={selectedLecture.homework.id} />
+          )}
         </div>
       )}
     </div>

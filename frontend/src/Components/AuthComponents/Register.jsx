@@ -10,6 +10,7 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("STUDENT"); // Значение по умолчанию
   const [error, setError] = useState("");
 
   const handleRegister = async (e) => {
@@ -17,18 +18,18 @@ export default function Register() {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:8000/users/", {
+      const response = await fetch("http://localhost:8000/api/v1/register/", { // Исправлен URL
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, role }),
       });
 
       if (response.ok) {
         const success = await loginUser(username, password);
         if (success) {
-          navigate("/courses");
+          navigate("/courses"); // Перенаправление на /courses после успешной регистрации
         } else {
           setError("Registration succeeded, but login failed.");
         }
@@ -75,6 +76,18 @@ export default function Register() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="role">Role:</label>
+          <select
+            id="role"
+            required
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="STUDENT">Student</option>
+            <option value="TEACHER">Teacher</option>
+          </select>
         </div>
         <button className={styles.submitButton} type="submit">
           Register

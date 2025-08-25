@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@Contexts/AuthContext";
 
 function EditCourseForm() {
-  const { id } = useParams(); // ID курса из URL
+  const { courseId } = useParams(); // ID курса из URL
   const [title, setTitle] = useState("");
   const navigate = useNavigate();
+  const { authTokens } = useAuth(); // <-- выносим сюда
 
   const loadCourse = async () => {
-    const token = localStorage.getItem("access");
+    const token = authTokens?.access;
     if (!token) {
       alert("Please login first");
       navigate("/login/");
@@ -16,7 +18,7 @@ function EditCourseForm() {
     }
 
     try {
-      const res = await axios.get(`/api/v1/courses/${id}/`, {
+      const res = await axios.get(`http://localhost:8000/api/v1/courses/${courseId}/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -30,11 +32,10 @@ function EditCourseForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("access");
-
+    const token = authTokens?.access; 
     try {
       await axios.put(
-        `/api/v1/courses/${id}/`,
+        `http://localhost:8000/api/v1/courses/${courseId}/`,
         { title },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -48,7 +49,7 @@ function EditCourseForm() {
 
   useEffect(() => {
     loadCourse();
-  }, [id]);
+  }, [courseId]);
 
   return (
     <div>

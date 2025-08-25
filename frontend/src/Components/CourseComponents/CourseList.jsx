@@ -43,7 +43,7 @@ function CourseList() {
   };
 
   const handleEdit = (courseId) => {
-    navigate(`/courses/edit/${courseId}`);
+    navigate(`/courses/${courseId}/edit`);
   };
 
   const handleAddCourse = () => {
@@ -69,7 +69,14 @@ function CourseList() {
         <ul>
           {courses.map((course) => (
             <li key={course.id} style={{ marginBottom: "10px" }}>
-              {course.title} (Teacher: {course.teacher.username})
+              <span
+                style={{ cursor: "pointer", textDecoration: "underline" }}
+                onClick={() => navigate(`/courses/${course.id}`)}
+              >
+                {course.title}
+              </span>{" "}
+
+              (Teacher: {course.teacher.username})
               {user?.role === "TEACHER" && course.teacher.id === user.id && (
                 <>
                   <button

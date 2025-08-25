@@ -11,20 +11,44 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loginUser = async (username, password) => {
-    const response = await fetch("http://localhost:8000/api/v1/login/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
-    });
+  const API_BASE = "http://localhost:8000";
 
-    if (response.ok) {
-      const data = await response.json();
-      setAuthTokens(data);
-      setUser(JSON.parse(atob(data.access.split(".")[1])));
-      localStorage.setItem("authTokens", JSON.stringify(data));
+  const fetchUserData = async (accessToken) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/me/`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch user data");
+      const data = await res.json();
+      setUser(data); // user.role будет здесь
+    } catch (err) {
+      console.error(err);
+      setUser(null);
+    }
+  };
+
+  const loginUser = async (username, password) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) return false;
+
+      const tokens = await res.json();
+      setAuthTokens(tokens);
+      localStorage.setItem("authTokens", JSON.stringify(tokens));
+
+      // Подгружаем пользователя
+      await fetchUserData(tokens.access);
+
       return true;
-    } else {
+    } catch (err) {
+      console.error("Login failed:", err);
       return false;
     }
   };
@@ -36,53 +60,55 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateAccessToken = async () => {
+    if (!authTokens?.refresh) return null;
     try {
-      const response = await fetch("http://localhost:8000/api/token/refresh/", {
+      const res = await fetch(`${API_BASE}/api/token/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh: authTokens?.refresh }),
+        body: JSON.stringify({ refresh: authTokens.refresh }),
       });
+      if (!res.ok) throw new Error("Failed to refresh token");
 
-      if (response.ok) {
-        const data = await response.json();
-        const newTokens = { ...authTokens, access: data.access };
-        setAuthTokens(newTokens);
-        setUser(JSON.parse(atob(data.access.split(".")[1])));
-        localStorage.setItem("authTokens", JSON.stringify(newTokens));
-        return data.access;
-      } else {
-        logoutUser();
-        return null;
-      }
-    } catch (error) {
+      const data = await res.json();
+      const newTokens = { ...authTokens, access: data.access };
+      setAuthTokens(newTokens);
+      localStorage.setItem("authTokens", JSON.stringify(newTokens));
+
+      // Обновляем user через /me/
+      await fetchUserData(newTokens.access);
+
+      return data.access;
+    } catch (err) {
+      console.error(err);
       logoutUser();
       return null;
     }
   };
 
   useEffect(() => {
-    const verifyToken = async () => {
-      if (!authTokens) {
-        setLoading(false);
-        return;
+    const initializeAuth = async () => {
+      if (authTokens?.access) {
+        try {
+          // Проверяем валидность токена
+          const res = await fetch(`${API_BASE}/api/token/verify/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: authTokens.access }),
+          });
+          if (res.ok) {
+            await fetchUserData(authTokens.access);
+          } else {
+            await updateAccessToken();
+          }
+        } catch (err) {
+          console.error(err);
+          logoutUser();
+        }
       }
-
-      const response = await fetch("http://localhost:8000/api/token/verify/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: authTokens.access }),
-      });
-
-      if (response.ok) {
-        setUser(JSON.parse(atob(authTokens.access.split(".")[1])));
-      } else {
-        await updateAccessToken();
-      }
-
       setLoading(false);
     };
 
-    verifyToken();
+    initializeAuth();
   }, []);
 
   return (
