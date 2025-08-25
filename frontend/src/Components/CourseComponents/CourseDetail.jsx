@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { useParams } from "react-router-dom";
 import { useAuth } from "@Contexts/AuthContext";
 import AddLectureForm from "../LectureComponents/AddLectureForm.jsx";
-import AddHomeworkForm from "../HomeworkComponents/AddHomeworkForm.jsx";
-import AddSubmissionForm from "../SubmissionComponents/AddSubmissionForm.jsx";
 
 const BASE_URL = "http://localhost:8000";
 
@@ -13,33 +11,38 @@ const CourseDetail = () => {
   const { authTokens, user } = useAuth();
   const [course, setCourse] = useState(null);
   const [lectures, setLectures] = useState([]);
-  const [selectedLecture, setSelectedLecture] = useState(null);
+  const navigate = useNavigate();
+
+  const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
   useEffect(() => {
     if (authTokens?.access) {
       loadCourse();
+      loadLectures();
     }
-  }, [authTokens]);
+  }, [authTokens, courseId]);
 
   const loadCourse = async () => {
     try {
-      const headers = { Authorization: `Bearer ${authTokens.access}` };
-
-      // Получаем курс
       const res = await axios.get(`${BASE_URL}/api/v1/courses/${courseId}/`, { headers });
       setCourse(res.data);
-
-      // Получаем лекции курса
-      const lectureRes = await axios.get(`${BASE_URL}/api/v1/lectures/?course=${courseId}`, { headers });
-      setLectures(lectureRes.data);
     } catch (err) {
       console.error(err);
       alert("Failed to load course");
     }
   };
 
-  const handleLectureSelect = (lecture) => {
-    setSelectedLecture(lecture);
+  const loadLectures = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/v1/lectures/`, { headers });
+      const courseLectures = res.data.filter(
+        (lecture) => lecture.course === parseInt(courseId)
+      );
+      setLectures(courseLectures);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load lectures");
+    }
   };
 
   if (!course) return <p>Loading course...</p>;
@@ -50,26 +53,37 @@ const CourseDetail = () => {
       <p>Teacher: {course.teacher.username}</p>
 
       {user?.role === "TEACHER" && (
-        <AddLectureForm courseId={courseId} onLectureAdded={loadCourse} />
+        <button
+          onClick={() => navigate(`/courses/${courseId}/students`)}
+          className="btn btn-primary"
+          style={{ marginBottom: "10px" }}
+        >
+          Добавить студентов
+        </button>
+      )}
+
+      {user?.role === "TEACHER" && (
+        <AddLectureForm courseId={courseId} onLectureAdded={loadLectures} />
       )}
 
       <h3>Lectures</h3>
-      <ul>
-        {lectures.map((lecture) => (
-          <li key={lecture.id} onClick={() => handleLectureSelect(lecture)}>
-            {lecture.topic}
-          </li>
-        ))}
-      </ul>
-
-      {selectedLecture && (
-        <div>
-          <h4>Selected Lecture: {selectedLecture.topic}</h4>
-          {user?.role === "TEACHER" && <AddHomeworkForm lectureId={selectedLecture.id} />}
-          {user?.role === "STUDENT" && selectedLecture.homework && (
-            <AddSubmissionForm homeworkId={selectedLecture.homework.id} />
-          )}
-        </div>
+      {lectures.length === 0 ? (
+        <p>No lectures yet</p>
+      ) : (
+        <ul>
+          {lectures.map((lecture) => (
+            <li key={lecture.id}>
+              <button
+                onClick={() =>
+                  navigate(`/courses/${courseId}/lectures/${lecture.id}`)
+                }
+                className="btn btn-link"
+              >
+                {lecture.topic}
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

@@ -1,10 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import authenticate, login
+from rest_framework import status, viewsets, permissions
+from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import UserSerializer
 from rest_framework.permissions import IsAuthenticated
+
+
+
+
+from .models import User
+
+from rest_framework.decorators import action
 
 class RegisterView(APIView):
     def post(self, request):
@@ -35,6 +42,11 @@ class LoginView(APIView):
             "access": str(refresh.access_token),
             "role": user.role
         }, status=status.HTTP_200_OK)
+    
+class StudentViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = User.objects.filter(role='STUDENT')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
     
 class UserMeView(APIView):
     permission_classes = [IsAuthenticated]

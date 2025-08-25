@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from .models import Course, Lecture, Homework, Submission, Grade
 from .serializers import CourseSerializer, LectureSerializer, HomeworkSerializer, SubmissionSerializer, GradeSerializer
 from users.models import User
+from .serializers import UserSerializer
 
 class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
@@ -31,6 +32,14 @@ class CourseViewSet(viewsets.ModelViewSet):
         if self.request.user != instance.teacher:
             raise permissions.PermissionDenied("You are not the teacher of this course")
         instance.delete()
+
+
+    @action(detail=True, methods=['get'], url_path='students')
+    def students_list(self, request, pk=None):
+        course = self.get_object()
+        students = course.students.all()
+        serializer = UserSerializer(students, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='add-student')
     def add_student(self, request, pk=None):
