@@ -25,7 +25,6 @@ import AddLectureForm from '@Components/LectureComponents/AddLectureForm.jsx';  
 import EditLectureForm from '@Components/LectureComponents/EditLectureForm.jsx';  // teacher-only
 
 // Homework
-import HomeworkList from '@Components/HomeworkComponents/HomeworkList.jsx';       // домашки лекции (видят все участники курса)
 import AddHomeworkForm from '@Components/HomeworkComponents/AddHomeworkForm.jsx'; // teacher-only
 import EditHomeworkForm from '@Components/HomeworkComponents/EditHomeworkForm.jsx'; // teacher-only
 
@@ -59,7 +58,6 @@ function AppRoutes() {
           <Route path="/courses/:courseId/lectures" element={<LectureList />} />
           <Route path="/courses/:courseId/lectures/:lectureId" element={<LectureDetail />} />
 
-          <Route path="/courses/:courseId/lectures/:lectureId/homework" element={<HomeworkList />} />
 
           {/* Student-only */}
           <Route element={<RoleRoute allowed={['STUDENT']} />}>

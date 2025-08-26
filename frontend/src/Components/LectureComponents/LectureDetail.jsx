@@ -1,64 +1,142 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@Contexts/AuthContext";
+import AddHomeworkForm from "../HomeworkComponents/AddHomeworkForm.jsx";
+import EditHomeworkForm from "../HomeworkComponents/EditHomeworkForm.jsx";
+
+const BASE_URL = "http://localhost:8000";
 
 function LectureDetail() {
-  const { courseId, lectureId } = useParams();
+  const { lectureId } = useParams();
   const { authTokens, user } = useAuth();
   const [lecture, setLecture] = useState(null);
-  const [courseTitle, setCourseTitle] = useState("");
-  const navigate = useNavigate();
+  const [homeworks, setHomeworks] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editHomework, setEditHomework] = useState(null);
 
+  const headers = { Authorization: `Bearer ${authTokens?.access}` };
+
+  // Загрузка лекции и домашних заданий
   useEffect(() => {
     if (!authTokens?.access || !lectureId) return;
 
-    const loadLecture = async () => {
+    const loadLectureAndHomework = async () => {
       try {
-        // Получаем лекцию
-        const res = await axios.get(
-          `http://localhost:8000/api/v1/lectures/${lectureId}/`,
-          { headers: { Authorization: `Bearer ${authTokens.access}` } }
+        const resLecture = await axios.get(
+          `${BASE_URL}/api/v1/lectures/${lectureId}/`,
+          { headers }
         );
-        setLecture(res.data);
+        setLecture(resLecture.data);
 
-        // Если API возвращает только course id, получаем название курса отдельно
-        if (res.data.course && typeof res.data.course === "number") {
-          const courseRes = await axios.get(
-            `http://localhost:8000/api/v1/courses/${res.data.course}/`,
-            { headers: { Authorization: `Bearer ${authTokens.access}` } }
-          );
-          setCourseTitle(courseRes.data.title);
-        } else if (res.data.course?.title) {
-          setCourseTitle(res.data.course.title);
-        }
+        // Получаем домашки только для этой лекции через query param
+        const resHomework = await axios.get(
+          `${BASE_URL}/api/v1/homework/?lecture=${lectureId}`,
+          { headers }
+        );
+        setHomeworks(resHomework.data);
       } catch (err) {
         console.error(err);
-        alert("Failed to load lecture or course");
-        navigate(`/courses/${courseId}`);
+        alert("Ошибка при загрузке лекции или домашних заданий");
       }
     };
 
-    loadLecture();
-  }, [authTokens, lectureId, courseId, navigate]);
+    loadLectureAndHomework();
+  }, [authTokens, lectureId]);
+
+  // Удаление домашки
+  const handleDelete = async (hwId) => {
+    if (!window.confirm("Удалить домашнее задание?")) return;
+    try {
+      await axios.delete(`${BASE_URL}/api/v1/homework/${hwId}/`, { headers });
+      setHomeworks((prev) => prev.filter((hw) => hw.id !== hwId));
+    } catch (err) {
+      console.error(err);
+      alert("Ошибка при удалении домашнего задания");
+    }
+  };
+
+  // Редактирование домашки
+  const handleEdit = (hw) => {
+    setEditHomework(hw);
+    setShowAddForm(false);
+  };
+
+  // После добавления новой домашки
+  const handleHomeworkAdded = (hw) => {
+    // Фильтруем, чтобы добавилась только если lecture совпадает
+    if (hw.lecture === parseInt(lectureId)) {
+      setHomeworks((prev) => [...prev, hw]);
+    }
+    setShowAddForm(false);
+  };
+
+  // После обновления домашки
+  const handleHomeworkUpdated = (updated) => {
+    setHomeworks((prev) =>
+      prev.map((h) => (h.id === updated.id ? updated : h))
+    );
+    setEditHomework(null);
+  };
 
   if (!lecture) return <div>Loading lecture...</div>;
 
   return (
     <div>
       <h2>Lecture: {lecture.topic}</h2>
-      <p>Course: {courseTitle}</p>
 
-      {lecture.presentation && (
-        <a href={lecture.presentation} target="_blank" rel="noreferrer">
-          Download Presentation
-        </a>
+      {user?.role === "TEACHER" && !showAddForm && !editHomework && (
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="bg-blue-600 text-white py-2 px-4 rounded mb-4"
+        >
+          Add Homework
+        </button>
       )}
 
-      {user?.role === "TEACHER" && (
-        <button onClick={() => navigate(`/courses/${courseId}/lectures/${lectureId}/edit`)}>
-          Edit Lecture
-        </button>
+      {showAddForm && (
+        <AddHomeworkForm
+          lectureId={lectureId}
+          onHomeworkAdded={handleHomeworkAdded}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
+
+      {editHomework && (
+        <EditHomeworkForm
+          homework={editHomework}
+          onClose={() => setEditHomework(null)}
+          onUpdate={handleHomeworkUpdated}
+        />
+      )}
+
+      <h3>Homeworks</h3>
+      {homeworks.length === 0 ? (
+        <p>No homework yet</p>
+      ) : (
+        <ul>
+          {homeworks.map((hw) => (
+            <li key={hw.id} className="flex justify-between items-center mb-2">
+              <span>{hw.text}</span>
+              {user?.role === "TEACHER" && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(hw)}
+                    className="bg-yellow-500 text-white px-2 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(hw.id)}
+                    className="bg-red-600 text-white px-2 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

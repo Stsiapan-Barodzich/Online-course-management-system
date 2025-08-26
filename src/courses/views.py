@@ -97,20 +97,36 @@ class LectureViewSet(viewsets.ModelViewSet):
 class HomeworkViewSet(viewsets.ModelViewSet):
     serializer_class = HomeworkSerializer
     permission_classes = [permissions.IsAuthenticated]
-    queryset = Homework.objects.all()
+    queryset = Homework.objects.all()   # ✅ добавили базовый queryset
 
     def get_queryset(self):
         user = self.request.user
+        qs = Homework.objects.all()
+
+        # фильтруем по роли
         if user.is_teacher():
-            return Homework.objects.filter(lecture__course__teacher=user)
+            qs = qs.filter(lecture__course__teacher=user)
         elif user.is_student():
-            return Homework.objects.filter(lecture__course__students=user)
-        return Homework.objects.none()
+            qs = qs.filter(lecture__course__students=user)
+        else:
+            return Homework.objects.none()
+
+        # фильтруем по lecture query param
+        lecture_id = self.request.GET.get("lecture")
+        if lecture_id:
+            qs = qs.filter(lecture_id=lecture_id)
+
+        return qs
 
     def perform_create(self, serializer):
         if not self.request.user.is_teacher():
             raise permissions.PermissionDenied("Only teachers can create homework")
-        serializer.save()
+
+        lecture_id = self.kwargs.get("lecture_pk") or self.kwargs.get("lecture_id")
+        if lecture_id:
+            serializer.save(lecture_id=lecture_id)
+        else:
+            serializer.save()
 
 class SubmissionViewSet(viewsets.ModelViewSet):
     serializer_class = SubmissionSerializer
