@@ -17,7 +17,6 @@ function LectureDetail() {
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
-  // Загрузка лекции и домашних заданий
   useEffect(() => {
     if (!authTokens?.access || !lectureId) return;
 
@@ -29,7 +28,6 @@ function LectureDetail() {
         );
         setLecture(resLecture.data);
 
-        // Получаем домашки только для этой лекции через query param
         const resHomework = await axios.get(
           `${BASE_URL}/api/v1/homework/?lecture=${lectureId}`,
           { headers }
@@ -37,7 +35,7 @@ function LectureDetail() {
         setHomeworks(resHomework.data);
       } catch (err) {
         console.error(err);
-        alert("Ошибка при загрузке лекции или домашних заданий");
+        alert("Error while loading homeworks");
       }
     };
 
@@ -46,32 +44,28 @@ function LectureDetail() {
 
   // Удаление домашки
   const handleDelete = async (hwId) => {
-    if (!window.confirm("Удалить домашнее задание?")) return;
+    if (!window.confirm("Delete homework?")) return;
     try {
       await axios.delete(`${BASE_URL}/api/v1/homework/${hwId}/`, { headers });
       setHomeworks((prev) => prev.filter((hw) => hw.id !== hwId));
     } catch (err) {
       console.error(err);
-      alert("Ошибка при удалении домашнего задания");
+      alert("Error while deleting homework");
     }
   };
 
-  // Редактирование домашки
   const handleEdit = (hw) => {
     setEditHomework(hw);
     setShowAddForm(false);
   };
 
-  // После добавления новой домашки
   const handleHomeworkAdded = (hw) => {
-    // Фильтруем, чтобы добавилась только если lecture совпадает
     if (hw.lecture === parseInt(lectureId)) {
       setHomeworks((prev) => [...prev, hw]);
     }
     setShowAddForm(false);
   };
 
-  // После обновления домашки
   const handleHomeworkUpdated = (updated) => {
     setHomeworks((prev) =>
       prev.map((h) => (h.id === updated.id ? updated : h))

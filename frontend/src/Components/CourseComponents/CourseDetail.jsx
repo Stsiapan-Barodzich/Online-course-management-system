@@ -11,6 +11,8 @@ const CourseDetail = () => {
   const { authTokens, user } = useAuth();
   const [course, setCourse] = useState(null);
   const [lectures, setLectures] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [showAddLectureForm, setShowAddLectureForm] = useState(false);
   const navigate = useNavigate();
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
@@ -19,6 +21,7 @@ const CourseDetail = () => {
     if (authTokens?.access) {
       loadCourse();
       loadLectures();
+      loadStudents();
     }
   }, [authTokens, courseId]);
 
@@ -45,6 +48,17 @@ const CourseDetail = () => {
     }
   };
 
+  const loadStudents = async () => {
+    try {
+      // если есть отдельный эндпоинт /students для курса
+      const res = await axios.get(`${BASE_URL}/api/v1/courses/${courseId}/students/`, { headers });
+      setStudents(res.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load students");
+    }
+  };
+
   if (!course) return <p>Loading course...</p>;
 
   return (
@@ -53,19 +67,45 @@ const CourseDetail = () => {
       <p>Teacher: {course.teacher.username}</p>
 
       {user?.role === "TEACHER" && (
-        <button
-          onClick={() => navigate(`/courses/${courseId}/students`)}
-          className="btn btn-primary"
-          style={{ marginBottom: "10px" }}
-        >
-          Добавить студентов
-        </button>
+        <>
+          <button
+            onClick={() => navigate(`/courses/${courseId}/students`)}
+            className="btn btn-primary"
+            style={{ marginBottom: "10px" }}
+          >
+            Add student
+          </button>
+
+          <button
+            onClick={() => setShowAddLectureForm((prev) => !prev)}
+            className="btn btn-success"
+            style={{ marginBottom: "10px", marginLeft: "10px" }}
+          >
+            {showAddLectureForm ? "Back" : "Add lecture"}
+          </button>
+
+          {showAddLectureForm && (
+            <AddLectureForm
+              courseId={courseId}
+              onLectureAdded={() => {
+                loadLectures();
+                setShowAddLectureForm(false);
+              }}
+            />
+          )}
+        </>
       )}
 
-      {user?.role === "TEACHER" && (
-        <AddLectureForm courseId={courseId} onLectureAdded={loadLectures} />
+      <h3>Students</h3>
+      {students.length === 0 ? (
+        <p>No students enrolled</p>
+      ) : (
+        <ul>
+          {students.map((student) => (
+            <li key={student.id}>{student.username}</li>
+          ))}
+        </ul>
       )}
-
       <h3>Lectures</h3>
       {lectures.length === 0 ? (
         <p>No lectures yet</p>
@@ -85,6 +125,7 @@ const CourseDetail = () => {
           ))}
         </ul>
       )}
+
     </div>
   );
 };

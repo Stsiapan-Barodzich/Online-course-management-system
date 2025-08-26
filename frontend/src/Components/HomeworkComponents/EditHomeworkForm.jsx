@@ -30,7 +30,7 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setError("Ошибка при сохранении домашнего задания");
+      setError("Error while saving homework");
     } finally {
       setLoading(false);
     }
@@ -41,11 +41,11 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
 
   return (
     <div className="p-4 max-w-lg mx-auto bg-white shadow rounded">
-      <h3 className="text-lg font-bold mb-2">Редактировать домашнее задание</h3>
+      <h3 className="text-lg font-bold mb-2">Edit</h3>
       {error && <p className="text-red-600 mb-2">{error}</p>}
 
       <div className="mb-2">
-        <label className="block font-medium mb-1">Текст задания</label>
+        <label className="block font-medium mb-1">Description</label>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -55,7 +55,7 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
       </div>
 
       <div className="mb-2">
-        <label className="block font-medium mb-1">Дата сдачи</label>
+        <label className="block font-medium mb-1">Due date</label>
         <input
           type="date"
           value={dueDate}
@@ -70,7 +70,7 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
           disabled={loading}
           className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
         >
-          {loading ? "Сохранение..." : "Сохранить"}
+          {loading ? "Saving..." : "Save"}
         </button>
         <button
           onClick={onClose}
