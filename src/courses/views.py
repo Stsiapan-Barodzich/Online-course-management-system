@@ -135,20 +135,55 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        qs = Submission.objects.all()
+
         if user.is_student():
-            return Submission.objects.filter(student=user)
-        return Submission.objects.none()
+            qs = qs.filter(student=user)
+        elif user.is_teacher():
+            qs = qs.filter(homework__lecture__course__teacher=user)
+        else:
+            return Submission.objects.none()
+
+        # фильтрация по lecture
+        lecture_id = self.request.GET.get("lecture")
+        if lecture_id:
+            qs = qs.filter(homework__lecture_id=lecture_id)
+
+        # фильтрация по homework
+        homework_id = self.request.GET.get("homework")
+        if homework_id:
+            qs = qs.filter(homework_id=homework_id)
+
+        return qs
 
     def perform_create(self, serializer):
         if not self.request.user.is_student():
             raise permissions.PermissionDenied("Only students can submit homework")
-        serializer.save()
+        serializer.save(student=self.request.user)
 
 class GradeViewSet(viewsets.ModelViewSet):
+
     serializer_class = GradeSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = Grade.objects.all()
 
+    def create(self, request, *args, **kwargs):
+        print("=== GRADE CREATE REQUEST ===")
+        print("User:", request.user)
+        print("User role:", request.user.role)
+        print("Request data:", request.data)
+        print("Request content type:", request.content_type)
+        try:
+            response = super().create(request, *args, **kwargs)
+            print("Response status:", response.status_code)
+            print("Response data:", response.data)
+            return response
+        except Exception as e:
+            print("ERROR:", str(e))
+            print("Error type:", type(e))
+            import traceback
+            traceback.print_exc()
+            raise
     def get_queryset(self):
         user = self.request.user
         if user.is_teacher():
@@ -160,4 +195,4 @@ class GradeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if not self.request.user.is_teacher():
             raise permissions.PermissionDenied("Only teachers can grade")
-        serializer.save()
+        serializer.save(teacher=self.request.user)

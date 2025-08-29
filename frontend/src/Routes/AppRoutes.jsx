@@ -31,7 +31,6 @@ import EditHomeworkForm from '@Components/HomeworkComponents/EditHomeworkForm.js
 // Submissions
 import SubmissionList from '@Components/SubmissionComponents/SubmissionList.jsx'; // teacher видит отправленные по лекции/домашке
 import AddSubmissionForm from '@Components/SubmissionComponents/AddSubmissionForm.jsx'; // student-only (отправка)
-import MySubmissions from '@Components/SubmissionComponents/MySubmissions.jsx';   // student-only (мои отправки)
 
 // Grades
 import GradeList from '@Components/GradeComponents/GradeList.jsx';                // teacher-only по лекции/курсу
@@ -62,7 +61,6 @@ function AppRoutes() {
           {/* Student-only */}
           <Route element={<RoleRoute allowed={['STUDENT']} />}>
             <Route path="/courses/:courseId/lectures/:lectureId/submit" element={<AddSubmissionForm />} />
-            <Route path="/my/submissions" element={<MySubmissions />} />
             <Route path="/my/grades" element={<MyGrades />} />
           </Route>
 

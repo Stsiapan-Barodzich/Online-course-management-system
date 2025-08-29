@@ -1,5 +1,10 @@
 from django.db import models
 from users.models import User
+from datetime import timedelta
+from django.utils import timezone
+
+def default_deadline():
+    return timezone.now().date() + timedelta(days=7)
 
 class Course(models.Model):
     title = models.CharField(max_length=200)
@@ -14,6 +19,8 @@ class Lecture(models.Model):
 class Homework(models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE)
     text = models.TextField()
+    description = models.TextField(null=True, blank=True)
+    deadline = models.DateField(default=default_deadline)
 
 class Submission(models.Model):
     homework = models.ForeignKey(Homework, on_delete=models.CASCADE)
@@ -22,7 +29,7 @@ class Submission(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
 
 class Grade(models.Model):
-    submission = models.OneToOneField(Submission, on_delete=models.CASCADE)
+    submission = models.OneToOneField(Submission, on_delete=models.CASCADE, related_name="grade" )
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'TEACHER'})
     score = models.IntegerField(null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
