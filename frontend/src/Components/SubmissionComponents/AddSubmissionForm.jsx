@@ -6,7 +6,6 @@ const AddSubmissionForm = ({ homeworkId, onSubmissionAdded }) => {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
   const { authTokens, user } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -32,7 +31,6 @@ const AddSubmissionForm = ({ homeworkId, onSubmissionAdded }) => {
           },
         }
       );
-
       setContent("");
       onSubmissionAdded?.(data);
     } catch (err) {
@@ -45,31 +43,38 @@ const AddSubmissionForm = ({ homeworkId, onSubmissionAdded }) => {
   if (user?.role !== "STUDENT") return null;
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="p-4 border rounded-lg shadow-md bg-white space-y-3"
-    >
-      <h3 className="text-lg font-semibold">Send Submission</h3>
-
-      {error && <p className="text-red-500">{error}</p>}
-
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="Write your submission here..."
-        required
-        className="w-full border p-2 rounded-md focus:ring-2 focus:ring-blue-400"
-        rows={5}
-      />
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 disabled:bg-gray-400"
-      >
-        {loading ? "Sending..." : "Send"}
-      </button>
-    </form>
+    <div className="form-container">
+      <h3 className="form-title">Send Submission</h3>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Sending submission...
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label className="form-label">Submission Content</label>
+          <textarea
+            className="form-textarea"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write your submission here..."
+            rows="5"
+            disabled={loading}
+            required
+          />
+        </div>
+        <div className="form-actions">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-small"
+          >
+            {loading ? "Sending..." : "Send"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

@@ -16,9 +16,11 @@ function LectureDetail() {
   const [homeworks, setHomeworks] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editHomework, setEditHomework] = useState(null);
-  const [openSubmissions, setOpenSubmissions] = useState(null); 
-  const [openAddSubmission, setOpenAddSubmission] = useState(null); 
-  const [showMySubmissions, setShowMySubmissions] = useState(null); // homework.id для my submissions студента
+  const [openSubmissions, setOpenSubmissions] = useState(null);
+  const [openAddSubmission, setOpenAddSubmission] = useState(null);
+  const [showMySubmissions, setShowMySubmissions] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
@@ -27,6 +29,8 @@ function LectureDetail() {
 
     const loadLectureAndHomework = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const resLecture = await axios.get(
           `${BASE_URL}/api/v1/lectures/${lectureId}/`,
           { headers }
@@ -39,8 +43,10 @@ function LectureDetail() {
         );
         setHomeworks(resHomework.data);
       } catch (err) {
+        setError("Failed to load lecture or homeworks");
         console.error(err);
-        alert("Ошибка при загрузке лекции или заданий");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -48,13 +54,13 @@ function LectureDetail() {
   }, [authTokens, lectureId]);
 
   const handleDelete = async (hwId) => {
-    if (!window.confirm("Удалить задание?")) return;
+    if (!window.confirm("Delete this homework?")) return;
     try {
       await axios.delete(`${BASE_URL}/api/v1/homework/${hwId}/`, { headers });
       setHomeworks((prev) => prev.filter((hw) => hw.id !== hwId));
     } catch (err) {
+      setError("Failed to delete homework");
       console.error(err);
-      alert("Ошибка при удалении задания");
     }
   };
 
@@ -81,22 +87,27 @@ function LectureDetail() {
     setOpenAddSubmission(null);
   };
 
-  if (!lecture) return <div>Загрузка лекции...</div>;
+  if (!lecture) return <div className="loading"><span className="spinner"></span>Loading lecture...</div>;
 
   return (
-    <div>
-      <h2>Lecture: {lecture.topic}</h2>
-
-      {/* Teacher: Add Homework */}
-      {user?.role === "TEACHER" && !showAddForm && !editHomework && (
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white py-2 px-4 rounded mb-4"
-        >
-          Add homework
-        </button>
+    <div className="lecture-detail-container">
+      <h2 className="form-title">Lecture: {lecture.topic}</h2>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Loading...
+        </div>
       )}
-
+      {user?.role === "TEACHER" && !showAddForm && !editHomework && (
+        <div className="form-actions">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn btn-primary btn-small"
+          >
+            Add homework
+          </button>
+        </div>
+      )}
       {showAddForm && (
         <AddHomeworkForm
           lectureId={lectureId}
@@ -104,7 +115,6 @@ function LectureDetail() {
           onCancel={() => setShowAddForm(false)}
         />
       )}
-
       {editHomework && (
         <EditHomeworkForm
           homework={editHomework}
@@ -112,80 +122,75 @@ function LectureDetail() {
           onUpdate={handleHomeworkUpdated}
         />
       )}
-
-      <h3>Homeworks</h3>
+      <h3 className="section-title">Homeworks</h3>
       {homeworks.length === 0 ? (
-        <p>There are no homeworks</p>
+        <p className="no-items">There are no homeworks</p>
       ) : (
-        <ul>
+        <ul className="item-list">
           {homeworks.map((hw) => (
-            <li key={hw.id} className="flex flex-col mb-2 border p-2 rounded">
-              <div className="flex justify-between items-center">
-                <span>{hw.text}</span>
-                <div className="flex gap-2">
-                  {/* Teacher buttons */}
+            <li key={hw.id} className="item">
+              <div className="item-content">
+                <div className="item-info">
+                  <span className="item-text">{hw.text}</span>
+                </div>
+                <div>{hw.description}</div>
+                <div className="item-actions">
                   {user?.role === "TEACHER" && (
                     <>
                       <button
-                        className="bg-yellow-600 text-white px-2 rounded"
+                        className="btn btn-warning btn-small"
                         onClick={() => handleEdit(hw)}
                       >
                         Edit
                       </button>
                       <button
-                        className="bg-red-600 text-white px-2 rounded"
+                        className="btn btn-danger btn-small"
                         onClick={() => handleDelete(hw.id)}
                       >
                         Delete
                       </button>
                       <button
-                        className="bg-green-600 text-white px-2 rounded"
+                        className="btn btn-success btn-small"
                         onClick={() =>
                           setOpenSubmissions(openSubmissions === hw.id ? null : hw.id)
                         }
                       >
-                        Submissions
+                        {openSubmissions === hw.id ? "Hide Submissions" : "Submissions"}
                       </button>
                     </>
                   )}
-
-                  {/* Student buttons */}
                   {user?.role === "STUDENT" && (
                     <>
                       <button
-                        className="bg-blue-600 text-white px-2 rounded"
+                        className="btn btn-primary btn-small"
                         onClick={() =>
                           setOpenAddSubmission(openAddSubmission === hw.id ? null : hw.id)
                         }
                       >
-                        Add Submission
+                        {openAddSubmission === hw.id ? "Cancel Submission" : "Add Submission"}
                       </button>
                       <button
-                        className="bg-purple-600 text-white px-2 rounded"
+                        className="btn btn-info btn-small"
                         onClick={() =>
                           setShowMySubmissions(showMySubmissions === hw.id ? null : hw.id)
                         }
                       >
-                        My Submissions
+                        {showMySubmissions === hw.id ? "Hide My Submissions" : "My Submissions"}
                       </button>
                     </>
                   )}
                 </div>
+                <div className="sub-content">
+                  {openSubmissions === hw.id && <SubmissionList homeworkId={hw.id} />}
+                  {openAddSubmission === hw.id && (
+                    <AddSubmissionForm
+                      homeworkId={hw.id}
+                      onSubmissionAdded={(submission) => handleSubmissionAdded(submission, hw.id)}
+                    />
+                  )}
+                  {showMySubmissions === hw.id && <SubmissionList homeworkId={hw.id} studentOnly />}
+                </div>
               </div>
-
-              {/* Teacher: Submissions list */}
-              {openSubmissions === hw.id && <SubmissionList homeworkId={hw.id} />}
-
-              {/* Student: Add submission form */}
-              {openAddSubmission === hw.id && (
-                <AddSubmissionForm
-                  homeworkId={hw.id}
-                  onSubmissionAdded={(submission) => handleSubmissionAdded(submission, hw.id)}
-                />
-              )}
-
-              {/* Student: My submissions list */}
-              {showMySubmissions === hw.id && <SubmissionList homeworkId={hw.id} studentOnly />}
             </li>
           ))}
         </ul>

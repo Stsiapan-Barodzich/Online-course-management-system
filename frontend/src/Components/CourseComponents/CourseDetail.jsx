@@ -50,7 +50,6 @@ const CourseDetail = () => {
 
   const loadStudents = async () => {
     try {
-      // если есть отдельный эндпоинт /students для курса
       const res = await axios.get(`${BASE_URL}/api/v1/courses/${courseId}/students/`, { headers });
       setStudents(res.data);
     } catch (err) {
@@ -59,65 +58,63 @@ const CourseDetail = () => {
     }
   };
 
-  if (!course) return <p>Loading course...</p>;
+  if (!course) return <div className="loading"><span className="spinner"></span>Loading course...</div>;
 
   return (
-    <div>
-      <h2>Course: {course.title}</h2>
-      <p>Teacher: {course.teacher.username}</p>
+    <div className="course-detail-container">
+      <h2 className="course-detail-title">Course: {course.title}</h2>
+      <p className="course-detail-teacher">Teacher: {course.teacher.username}</p>
 
       {user?.role === "TEACHER" && (
-        <>
+        <div className="course-detail-actions">
           <button
             onClick={() => navigate(`/courses/${courseId}/students`)}
-            className="btn btn-primary"
-            style={{ marginBottom: "10px" }}
+            className="btn btn-primary btn-small"
           >
             Add student
           </button>
-
           <button
             onClick={() => setShowAddLectureForm((prev) => !prev)}
-            className="btn btn-success"
-            style={{ marginBottom: "10px", marginLeft: "10px" }}
+            className="btn btn-success btn-small"
           >
             {showAddLectureForm ? "Back" : "Add lecture"}
           </button>
-
-          {showAddLectureForm && (
-            <AddLectureForm
-              courseId={courseId}
-              onLectureAdded={() => {
-                loadLectures();
-                setShowAddLectureForm(false);
-              }}
-            />
-          )}
-        </>
+        </div>
       )}
 
-      <h3>Students</h3>
+      {showAddLectureForm && (
+        <AddLectureForm
+          courseId={courseId}
+          onLectureAdded={() => {
+            loadLectures();
+            setShowAddLectureForm(false);
+          }}
+        />
+      )}
+
+      {/* <h3 className="section-title">Students</h3>
       {students.length === 0 ? (
-        <p>No students enrolled</p>
+        <p className="no-items">No students enrolled</p>
       ) : (
-        <ul>
+        <ul className="item-list">
           {students.map((student) => (
-            <li key={student.id}>{student.username}</li>
+            <li key={student.id} className="item">
+              <span className="item-text">{student.username}</span>
+            </li>
           ))}
         </ul>
-      )}
-      <h3>Lectures</h3>
+      )} */}
+
+      <h3 className="section-title">Lectures</h3>
       {lectures.length === 0 ? (
-        <p>No lectures yet</p>
+        <p className="no-items">No lectures yet</p>
       ) : (
-        <ul>
+        <ul className="item-list">
           {lectures.map((lecture) => (
-            <li key={lecture.id}>
+            <li key={lecture.id} className="item">
               <button
-                onClick={() =>
-                  navigate(`/courses/${courseId}/lectures/${lecture.id}`)
-                }
-                className="btn btn-link"
+                onClick={() => navigate(`/courses/${courseId}/lectures/${lecture.id}`)}
+                className="btn btn-link item-link"
               >
                 {lecture.topic}
               </button>
@@ -125,7 +122,6 @@ const CourseDetail = () => {
           ))}
         </ul>
       )}
-
     </div>
   );
 };

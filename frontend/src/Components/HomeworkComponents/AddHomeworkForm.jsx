@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { useAuth } from "@Contexts/AuthContext";
 
@@ -13,12 +13,12 @@ function AddHomeworkForm({ courseId, lectureId, editHomework = null, onHomeworkA
   );
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Функция для вычисления значения по умолчанию (текущая дата + 7 дней)
   function getDefaultDeadline() {
     const date = new Date();
     date.setDate(date.getDate() + 7);
-    return date.toISOString().split("T")[0]; // Формат YYYY-MM-DD
+    return date.toISOString().split("T")[0];
   }
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
@@ -27,99 +27,106 @@ function AddHomeworkForm({ courseId, lectureId, editHomework = null, onHomeworkA
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
 
     if (!lectureId) {
       setError("Lecture ID is required");
+      setLoading(false);
       return;
     }
 
     try {
       let res;
       if (editHomework) {
-        // Редактирование
         res = await axios.put(
           `${BASE_URL}/homework/${editHomework.id}/`,
           { text, description, deadline, lecture: lectureId },
           { headers }
         );
-        setSuccess("Задание обновлено ✅");
+        setSuccess("Homework updated successfully");
       } else {
-        // Создание
         res = await axios.post(
           `${BASE_URL}/homework/`,
           { text, description, deadline, lecture: lectureId },
           { headers }
         );
-        setSuccess("Задание добавлено ✅");
+        setSuccess("Homework added successfully");
       }
 
       onHomeworkAdded && onHomeworkAdded(res.data);
       setText("");
       setDescription("");
-      setDeadline(getDefaultDeadline()); // Сбрасываем на значение по умолчанию
+      setDeadline(getDefaultDeadline());
     } catch (err) {
       console.error(err);
-      if (err.response?.status === 401) setError("Unauthorized ❌");
-      else setError("Что-то пошло не так ❌");
+      if (err.response?.status === 401) setError("Unauthorized");
+      else setError("Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Рендерим только для TEACHER
   if (user?.role !== "TEACHER") return null;
 
   return (
-    <div className="p-4 max-w-lg mx-auto bg-white shadow rounded">
-      <h2 className="text-xl font-bold mb-4">
-        {editHomework ? "Редактировать задание" : "Добавить задание"}
-      </h2>
-      {success && <p className="text-green-600 mb-2">{success}</p>}
-      {error && <p className="text-red-600 mb-2">{error}</p>}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block font-medium">Текст задания</label>
+    <div className="form-container">
+      <h2 className="form-title">{editHomework ? "Edit Homework" : "Add Homework"}</h2>
+      {success && <p className="success">{success}</p>}
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Saving homework...
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label className="form-label">Homework Text</label>
           <textarea
+            className="form-textarea"
             value={text}
             onChange={(e) => setText(e.target.value)}
             required
-            className="w-full border p-2 rounded"
+            disabled={loading}
+            rows="4"
           />
         </div>
-
-        <div>
-          <label className="block font-medium">Описание</label>
+        <div className="form-group">
+          <label className="form-label">Description</label>
           <textarea
+            className="form-textarea"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full border p-2 rounded"
+            disabled={loading}
+            rows="4"
           />
         </div>
-
-        <div>
-          <label className="block font-medium">Дедлайн</label>
+        <div className="form-group">
+          <label className="form-label">Deadline</label>
           <input
             type="date"
+            className="form-input"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
             required
-            className="w-full border p-2 rounded"
+            disabled={loading}
           />
         </div>
-
-        <div className="flex gap-2">
+        <div className="form-actions">
           <button
             type="submit"
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+            disabled={loading}
+            className="btn btn-primary btn-small"
           >
-            {editHomework ? "Сохранить" : "Добавить"}
+            {editHomework ? "Save" : "Add"}
           </button>
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500"
+              disabled={loading}
+              className="btn btn-danger btn-small"
             >
-              Отмена
+              Cancel
             </button>
           )}
         </div>

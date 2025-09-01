@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
       });
       if (!res.ok) throw new Error("Failed to fetch user data");
       const data = await res.json();
-      setUser(data); // user.role будет здесь
+      setUser(data); 
     } catch (err) {
       console.error(err);
       setUser(null);
@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
       setAuthTokens(tokens);
       localStorage.setItem("authTokens", JSON.stringify(tokens));
 
-      // Подгружаем пользователя
       await fetchUserData(tokens.access);
 
       return true;
@@ -74,7 +73,6 @@ export const AuthProvider = ({ children }) => {
       setAuthTokens(newTokens);
       localStorage.setItem("authTokens", JSON.stringify(newTokens));
 
-      // Обновляем user через /me/
       await fetchUserData(newTokens.access);
 
       return data.access;
@@ -89,7 +87,6 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       if (authTokens?.access) {
         try {
-          // Проверяем валидность токена
           const res = await fetch(`${API_BASE}/api/token/verify/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

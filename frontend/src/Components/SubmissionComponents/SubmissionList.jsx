@@ -8,34 +8,35 @@ function SubmissionList() {
   const { courseId, lectureId } = useParams();
   const { authTokens, user } = useAuth();
   const navigate = useNavigate();
-
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showGradeForm, setShowGradeForm] = useState({}); // Хранит, для какой submission показывать форму
-  const [showGrade, setShowGrade] = useState({}); // Хранит, для какой submission показывать оценку
-  const [showEditForm, setShowEditForm] = useState({}); // Хранит, для какой submission показывать форму редактирования
-  const [editContent, setEditContent] = useState({}); // Хранит содержимое для редактирования
-  const [editError, setEditError] = useState(""); // Ошибка при редактировании
+  const [error, setError] = useState(null);
+  const [showGradeForm, setShowGradeForm] = useState({});
+  const [showGrade, setShowGrade] = useState({});
+  const [showEditForm, setShowEditForm] = useState({});
+  const [editContent, setEditContent] = useState({});
+  const [editError, setEditError] = useState("");
 
   const loadSubmissions = async () => {
     if (!authTokens?.access) {
-      alert("Please login first");
+      setError("Please login first");
       navigate("/login/");
       return;
     }
 
     try {
+      setLoading(true);
+      setError(null);
       const res = await axios.get(
         `http://localhost:8000/api/v1/submissions/?lecture=${lectureId}`,
         {
           headers: { Authorization: `Bearer ${authTokens.access}` },
         }
       );
-      console.log("Submissions data:", res.data); // Для отладки
       setSubmissions(res.data);
     } catch (err) {
+      setError("Failed to load submissions");
       console.error("Failed to load submissions:", err);
-      alert("Failed to load submissions. Check console.");
     } finally {
       setLoading(false);
     }
@@ -100,38 +101,83 @@ function SubmissionList() {
       );
       setSubmissions((prev) => prev.filter((sub) => sub.id !== submissionId));
     } catch (err) {
+      setError("Failed to delete submission");
       console.error("Failed to delete submission:", err);
-      alert("Failed to delete submission. Check console.");
     }
   };
 
-  if (loading) return <p>Loading submissions...</p>;
+  if (loading) return <div className="loading"><span className="spinner"></span>Loading submissions...</div>;
 
   return (
-    <div>
-      <h2>
+    <div className="submission-list-container">
+      <h2 className="form-title">
         Submissions (Course {courseId}, Lecture {lectureId})
       </h2>
-
+      {error && <p className="error">{error}</p>}
       {submissions.length === 0 ? (
-        <p>No submissions yet</p>
+        <p className="no-items">No submissions yet</p>
       ) : (
-        <ul>
+        <ul className="item-list">
           {submissions.map((sub) => (
-            <li key={sub.id} style={{ marginBottom: "10px" }}>
-              <strong>Student:</strong> {sub.student?.username || "—"} <br />
-              <strong>Submitted at:</strong>{" "}
-              {new Date(sub.submitted_at).toLocaleString()} <br />
-              <strong>Content:</strong>
-              <div style={{ whiteSpace: "pre-wrap", marginTop: "5px" }}>
-                {sub.content}
+            <li key={sub.id} className="item">
+              <div className="item-content">
+                <div className="item-info">
+                  <strong>Student:</strong> {sub.student?.username || "—"}
+                </div>
+                <div className="item-info">
+                  <strong>Submitted at:</strong>{" "}
+                  {new Date(sub.submitted_at).toLocaleString()}
+                </div>
+                <div className="item-info">
+                  <strong>Content:</strong>
+                  <div className="item-text">{sub.content}</div>
+                </div>
+                {user?.role === "STUDENT" && sub.grade && showGrade[sub.id] && (
+                  <div className="grade-info">
+                    <strong>Score:</strong> {sub.grade.score ?? "—"} <br />
+                    <strong>Comment:</strong> {sub.grade.comment || "—"} <br />
+                    <strong>Graded at:</strong>{" "}
+                    {new Date(sub.grade.graded_at).toLocaleString()}
+                  </div>
+                )}
+                {user?.role === "STUDENT" && showEditForm[sub.id] && (
+                  <div className="edit-form">
+                    {editError && <p className="error">{editError}</p>}
+                    <textarea
+                      className="form-textarea"
+                      value={editContent[sub.id] || ""}
+                      onChange={(e) =>
+                        setEditContent((prev) => ({
+                          ...prev,
+                          [sub.id]: e.target.value,
+                        }))
+                      }
+                      placeholder="Edit your submission"
+                      rows="5"
+                    />
+                    <div className="form-actions">
+                      <button
+                        className="btn btn-primary btn-small"
+                        onClick={() => handleEditSubmission(sub.id)}
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {user?.role === "TEACHER" && showGradeForm[sub.id] && (
+                  <div className="grade-form">
+                    <AddGradeForm
+                      submissionId={sub.id}
+                      onGradeAdded={(grade) => handleGradeAdded(sub.id, grade)}
+                    />
+                  </div>
+                )}
               </div>
-
-              {/* Кнопка и форма для учителя */}
-              {user?.role === "TEACHER" && sub.id && (
-                <>
+              <div className="item-actions">
+                {user?.role === "TEACHER" && sub.id && (
                   <button
-                    style={{ marginTop: "5px", marginRight: "5px" }}
+                    className="btn btn-primary btn-small"
                     onClick={() =>
                       setShowGradeForm((prev) => ({
                         ...prev,
@@ -141,81 +187,35 @@ function SubmissionList() {
                   >
                     {showGradeForm[sub.id] ? "Cancel" : "Grade"}
                   </button>
-                  {showGradeForm[sub.id] && (
-                    <div style={{ marginTop: "10px" }}>
-                      <AddGradeForm
-                        submissionId={sub.id}
-                        onGradeAdded={(grade) => handleGradeAdded(sub.id, grade)}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Кнопки и форма для студента */}
-              {user?.role === "STUDENT" && sub.student?.id === user.id && (
-                <>
+                )}
+                {user?.role === "STUDENT" && sub.student?.id === user.id && (
+                  <>
+                    <button
+                      className="btn btn-primary btn-small"
+                      onClick={() => {
+                        setShowEditForm((prev) => ({
+                          ...prev,
+                          [sub.id]: !prev[sub.id],
+                        }));
+                        setEditContent((prev) => ({
+                          ...prev,
+                          [sub.id]: sub.content,
+                        }));
+                      }}
+                    >
+                      {showEditForm[sub.id] ? "Cancel Edit" : "Edit"}
+                    </button>
+                    <button
+                      className="btn btn-danger btn-small"
+                      onClick={() => handleDeleteSubmission(sub.id)}
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+                {user?.role === "STUDENT" && sub.grade && (
                   <button
-                    style={{ marginTop: "5px", marginRight: "5px" }}
-                    onClick={() => {
-                      setShowEditForm((prev) => ({
-                        ...prev,
-                        [sub.id]: !prev[sub.id],
-                      }));
-                      setEditContent((prev) => ({
-                        ...prev,
-                        [sub.id]: sub.content,
-                      }));
-                    }}
-                  >
-                    {showEditForm[sub.id] ? "Cancel Edit" : "Edit"}
-                  </button>
-                  <button
-                    style={{ marginTop: "5px", marginRight: "5px" }}
-                    onClick={() => handleDeleteSubmission(sub.id)}
-                  >
-                    Delete
-                  </button>
-                  {showEditForm[sub.id] && (
-                    <div style={{ marginTop: "10px" }}>
-                      {editError && <p style={{ color: "red" }}>{editError}</p>}
-                      <textarea
-                        value={editContent[sub.id] || ""}
-                        onChange={(e) =>
-                          setEditContent((prev) => ({
-                            ...prev,
-                            [sub.id]: e.target.value,
-                          }))
-                        }
-                        style={{
-                          width: "100%",
-                          minHeight: "100px",
-                          padding: "5px",
-                          marginBottom: "5px",
-                        }}
-                        placeholder="Edit your submission"
-                      />
-                      <button
-                        style={{
-                          backgroundColor: "#2563eb",
-                          color: "white",
-                          padding: "8px 16px",
-                          borderRadius: "4px",
-                        }}
-                        onClick={() => handleEditSubmission(sub.id)}
-                      >
-                        Save
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Кнопка для студента показать его оценку */}
-              {user?.role === "STUDENT" && sub.grade && (
-                <>
-                  <button
-                    style={{ marginTop: "5px", marginRight: "5px" }}
+                    className="btn btn-info btn-small"
                     onClick={() =>
                       setShowGrade((prev) => ({
                         ...prev,
@@ -225,18 +225,8 @@ function SubmissionList() {
                   >
                     My Grade
                   </button>
-                  {showGrade[sub.id] && (
-                    <div style={{ marginTop: "5px", padding: "5px", border: "1px solid #ccc" }}>
-                      <strong>Score:</strong> {sub.grade.score ?? "—"} <br />
-                      <strong>Comment:</strong> {sub.grade.comment || "—"} <br />
-                      <strong>Graded at:</strong>{" "}
-                      {new Date(sub.grade.graded_at).toLocaleString()}
-                    </div>
-                  )}
-                </>
-              )}
-
-              <hr />
+                )}
+              </div>
             </li>
           ))}
         </ul>

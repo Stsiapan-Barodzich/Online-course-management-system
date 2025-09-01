@@ -9,8 +9,6 @@ const AddGradeForm = ({ submissionId, onGradeAdded }) => {
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-
   const { authTokens, user } = useAuth();
 
   if (!user || user.role !== "TEACHER") return null;
@@ -52,41 +50,50 @@ const AddGradeForm = ({ submissionId, onGradeAdded }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 border rounded-md shadow-sm mb-3">
-      <h3 className="text-lg font-semibold mb-2">Add Grade</h3>
-      {error && <p className="text-red-500">{error}</p>}
-
-      <div className="mb-2">
-        <label className="block mb-1">Score:</label>
-        <input
-          type="number"
-          min="0"
-          max="100"
-          value={score}
-          onChange={(e) => setScore(e.target.value)}
-          className="border p-1 rounded w-full"
-          required
-        />
-      </div>
-
-      <div className="mb-2">
-        <label className="block mb-1">Comment (optional):</label>
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          className="border p-1 rounded w-full"
-          placeholder="Add a comment"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-      >
-        {loading ? "Saving..." : "Add Grade"}
-      </button>
-    </form>
+    <div className="form-container">
+      <h3 className="form-title">Add Grade</h3>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Saving grade...
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label className="form-label">Score</label>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            className="form-input"
+            value={score}
+            onChange={(e) => setScore(e.target.value)}
+            required
+            disabled={loading}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Comment (optional)</label>
+          <textarea
+            className="form-textarea"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Add a comment"
+            disabled={loading}
+            rows="4"
+          />
+        </div>
+        <div className="form-actions">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-success btn-small"
+          >
+            {loading ? "Saving..." : "Add Grade"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

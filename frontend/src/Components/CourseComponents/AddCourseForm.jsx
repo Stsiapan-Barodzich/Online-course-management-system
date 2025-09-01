@@ -1,13 +1,20 @@
-// frontend/src/Components/CourseComponents/AddCourseForm.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@Contexts/AuthContext";
 
 const AddCourseForm = ({ onSuccess }) => {
-  const { authTokens } = useAuth();
+  const { authTokens, user } = useAuth();
+  const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // Redirect to login if not authenticated or not a teacher
+  if (!authTokens?.access || user?.role !== "TEACHER") {
+    navigate("/login/");
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +32,7 @@ const AddCourseForm = ({ onSuccess }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authTokens?.access}`,
+          Authorization: `Bearer ${authTokens.access}`,
         },
         body: JSON.stringify({
           title,
@@ -39,48 +46,53 @@ const AddCourseForm = ({ onSuccess }) => {
       }
 
       const data = await response.json();
-      if (onSuccess) onSuccess(data);
-
+      if (onSuccess) onSuccess(data); // Call onSuccess if provided
       setTitle("");
       setDescription("");
+      navigate("/courses/"); // Redirect to CourseList
     } catch (err) {
       setError(err.message);
+      console.error("Error adding course:", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white shadow-lg rounded-2xl p-6">
-      <h2 className="text-xl font-semibold mb-4">Add New Course</h2>
-      {error && <p className="text-red-600 mb-3">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block font-medium mb-1">Course Title</label>
+    <div className="form-container">
+      <h2 className="form-title">Add New Course</h2>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Adding course...
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label className="form-label">Course Title</label>
           <input
             type="text"
-            className="w-full border rounded-lg p-2"
+            className="form-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             disabled={loading}
+            required
           />
         </div>
-
-        <div>
-          <label className="block font-medium mb-1">Description</label>
+        <div className="form-group">
+          <label className="form-label">Description</label>
           <textarea
-            className="w-full border rounded-lg p-2"
-            rows="3"
+            className="form-textarea"
+            rows="4"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             disabled={loading}
           ></textarea>
         </div>
-
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+          className="btn btn-primary btn-small"
         >
           {loading ? "Adding..." : "Add Course"}
         </button>

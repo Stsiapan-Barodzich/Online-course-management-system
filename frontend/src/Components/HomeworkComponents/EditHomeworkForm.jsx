@@ -14,16 +14,15 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Функция для вычисления значения по умолчанию (текущая дата + 7 дней)
   function getDefaultDeadline() {
     const date = new Date();
     date.setDate(date.getDate() + 7);
-    return date.toISOString().split("T")[0]; // Формат YYYY-MM-DD
+    return date.toISOString().split("T")[0];
   }
 
   const saveHomework = async () => {
     if (!authTokens?.access) {
-      setError("Нет токена доступа");
+      setError("No access token");
       return;
     }
 
@@ -40,65 +39,72 @@ function EditHomeworkForm({ homework, onClose, onUpdate }) {
       onClose();
     } catch (err) {
       console.error(err);
-      setError("Ошибка при сохранении домашнего задания");
+      setError("Failed to save homework");
     } finally {
       setLoading(false);
     }
   };
 
-  // Только учитель может редактировать
   if (user?.role !== "TEACHER") return null;
 
   return (
-    <div className="p-4 max-w-lg mx-auto bg-white shadow rounded">
-      <h3 className="text-lg font-bold mb-2">Редактировать задание</h3>
-      {error && <p className="text-red-600 mb-2">{error}</p>}
-
-      <div className="mb-2">
-        <label className="block font-medium mb-1">Текст задания</label>
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full border p-2 rounded"
-          rows={4}
-        />
-      </div>
-
-      <div className="mb-2">
-        <label className="block font-medium mb-1">Описание</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full border p-2 rounded"
-          rows={4}
-        />
-      </div>
-
-      <div className="mb-2">
-        <label className="block font-medium mb-1">Дедлайн</label>
-        <input
-          type="date"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={saveHomework}
-          disabled={loading}
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-        >
-          {loading ? "Сохранение..." : "Сохранить"}
-        </button>
-        <button
-          onClick={onClose}
-          className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500"
-        >
-          Отмена
-        </button>
-      </div>
+    <div className="form-container">
+      <h3 className="form-title">Edit Homework</h3>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Saving homework...
+        </div>
+      )}
+      <form onSubmit={(e) => { e.preventDefault(); saveHomework(); }} className="form">
+        <div className="form-group">
+          <label className="form-label">Homework Text</label>
+          <textarea
+            className="form-textarea"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={loading}
+            rows="4"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Description</label>
+          <textarea
+            className="form-textarea"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={loading}
+            rows="4"
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Deadline</label>
+          <input
+            type="date"
+            className="form-input"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <div className="form-actions">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-small"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="btn btn-danger btn-small"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

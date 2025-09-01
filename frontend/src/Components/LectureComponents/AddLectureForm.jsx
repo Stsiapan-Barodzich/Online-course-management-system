@@ -1,14 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
-import { useAuth } from "@/Contexts/AuthContext"; 
+import { useAuth } from "@Contexts/AuthContext";
 
 const BASE_URL = "http://localhost:8000/api/v1";
 
 const AddLectureForm = ({ onLectureAdded }) => {
   const { courseId } = useParams();
   const { authTokens } = useAuth();
-
   const [topic, setTopic] = useState("");
   const [presentation, setPresentation] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -48,39 +47,46 @@ const AddLectureForm = ({ onLectureAdded }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-xl shadow">
-      <h3 className="text-lg font-semibold">Add Lecture</h3>
-
-      {error && <p className="text-red-500">{error}</p>}
-
-      <div>
-        <label className="block text-sm font-medium">Topic</label>
-        <input
-          type="text"
-          value={topic}
-          onChange={(e) => setTopic(e.target.value)}
-          required
-          className="w-full border p-2 rounded"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">Presentation (optional)</label>
-        <input
-          type="file"
-          onChange={(e) => setPresentation(e.target.files[0])}
-          className="w-full"
-        />
-      </div>
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? "Saving..." : "Add Lecture"}
-      </button>
-    </form>
+    <div className="form-container">
+      <h3 className="form-title">Add Lecture</h3>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Saving lecture...
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="form">
+        <div className="form-group">
+          <label className="form-label">Topic</label>
+          <input
+            type="text"
+            className="form-input"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Presentation (optional)</label>
+          <input
+            type="file"
+            className="form-file"
+            onChange={(e) => setPresentation(e.target.files[0])}
+            disabled={loading}
+          />
+        </div>
+        <div className="form-actions">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-small"
+          >
+            {loading ? "Saving..." : "Add Lecture"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 };
 

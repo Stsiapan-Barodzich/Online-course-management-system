@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './PrivateRoute.jsx';
-import RoleRoute from './RoleRoute.jsx'; // см. ниже, если ещё нет – добавь
+import RoleRoute from './RoleRoute.jsx'; 
 
 // Layout
 import Layout from '@Components/SharedComponents/Layout/Layout.jsx';
@@ -11,31 +11,31 @@ import Register from '@Components/AuthComponents/Register.jsx';
 import Logout from '@Components/AuthComponents/Logout.jsx';
 
 // Courses
-import CourseList from '@Components/CourseComponents/CourseList.jsx';             // список доступных пользователю курсов
-import CourseDetail from '@Components/CourseComponents/CourseDetail.jsx';         // инфо по курсу (лекции, состав)
-import AddCourseForm from '@Components/CourseComponents/AddCourseForm.jsx';       // teacher-only
-import EditCourseForm from '@Components/CourseComponents/EditCourseForm.jsx';     // teacher-only
-import ManageCourseStudents from '@Components/CourseComponents/ManageCourseStudents.jsx'; // add/remove student (teacher-only)
-import ManageCourseTeachers from '@Components/CourseComponents/ManageCourseTeachers.jsx'; // add co-teacher (teacher-only)
+import CourseList from '@Components/CourseComponents/CourseList.jsx';             
+import CourseDetail from '@Components/CourseComponents/CourseDetail.jsx';        
+import AddCourseForm from '@Components/CourseComponents/AddCourseForm.jsx';       
+import EditCourseForm from '@Components/CourseComponents/EditCourseForm.jsx';     
+import ManageCourseStudents from '@Components/CourseComponents/ManageCourseStudents.jsx'; 
+import ManageCourseTeachers from '@Components/CourseComponents/ManageCourseTeachers.jsx'; 
 
 // Lectures
-import LectureList from '@Components/LectureComponents/LectureList.jsx';          // список лекций курса
-import LectureDetail from '@Components/LectureComponents/LectureDetail.jsx';      // детали лекции
-import AddLectureForm from '@Components/LectureComponents/AddLectureForm.jsx';    // teacher-only
-import EditLectureForm from '@Components/LectureComponents/EditLectureForm.jsx';  // teacher-only
+import LectureList from '@Components/LectureComponents/LectureList.jsx';          
+import LectureDetail from '@Components/LectureComponents/LectureDetail.jsx';      
+import AddLectureForm from '@Components/LectureComponents/AddLectureForm.jsx';    
+import EditLectureForm from '@Components/LectureComponents/EditLectureForm.jsx';  
 
 // Homework
-import AddHomeworkForm from '@Components/HomeworkComponents/AddHomeworkForm.jsx'; // teacher-only
-import EditHomeworkForm from '@Components/HomeworkComponents/EditHomeworkForm.jsx'; // teacher-only
+import AddHomeworkForm from '@Components/HomeworkComponents/AddHomeworkForm.jsx'; 
+import EditHomeworkForm from '@Components/HomeworkComponents/EditHomeworkForm.jsx'; 
 
 // Submissions
-import SubmissionList from '@Components/SubmissionComponents/SubmissionList.jsx'; // teacher видит отправленные по лекции/домашке
-import AddSubmissionForm from '@Components/SubmissionComponents/AddSubmissionForm.jsx'; // student-only (отправка)
+import SubmissionList from '@Components/SubmissionComponents/SubmissionList.jsx'; 
+import AddSubmissionForm from '@Components/SubmissionComponents/AddSubmissionForm.jsx'; 
 
 // Grades
-import GradeList from '@Components/GradeComponents/GradeList.jsx';                // teacher-only по лекции/курсу
-import GradeForm from '@Components/GradeComponents/AddGradeForm.jsx';                // teacher-only создать/обновить оценку
-import MyGrades from '@Components/GradeComponents/MyGrades.jsx';                  // student-only
+import GradeList from '@Components/GradeComponents/GradeList.jsx';              
+import GradeForm from '@Components/GradeComponents/AddGradeForm.jsx';                
+            
 
 function AppRoutes() {
   return (
@@ -61,7 +61,6 @@ function AppRoutes() {
           {/* Student-only */}
           <Route element={<RoleRoute allowed={['STUDENT']} />}>
             <Route path="/courses/:courseId/lectures/:lectureId/submit" element={<AddSubmissionForm />} />
-            <Route path="/my/grades" element={<MyGrades />} />
           </Route>
 
           {/* Teacher-only */}

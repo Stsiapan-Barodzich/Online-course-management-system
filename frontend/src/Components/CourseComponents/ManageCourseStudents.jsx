@@ -11,6 +11,8 @@ const ManageCourseStudents = () => {
   const [course, setCourse] = useState(null);
   const [allStudents, setAllStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
@@ -23,11 +25,14 @@ const ManageCourseStudents = () => {
 
   const loadCourse = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${BASE_URL}/api/v1/courses/${courseId}/`, { headers });
       setCourse(res.data);
     } catch (err) {
+      setError("Failed to load course");
       console.error(err);
-      alert("Failed to load course");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,58 +41,88 @@ const ManageCourseStudents = () => {
       const res = await axios.get(`${BASE_URL}/api/v1/students/`, { headers });
       setAllStudents(res.data);
     } catch (err) {
+      setError("Failed to load students");
       console.error(err);
-      alert("Failed to load students");
     }
   };
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
-    if (!selectedStudentId) return;
+    if (!selectedStudentId) {
+      setError("Please select a student");
+      return;
+    }
 
     try {
+      setLoading(true);
+      setError(null);
       await axios.post(
         `${BASE_URL}/api/v1/courses/${courseId}/add-student/`,
         { student_id: selectedStudentId },
         { headers }
       );
-      alert("Student added successfully");
-      loadCourse(); 
+      loadCourse();
+      setSelectedStudentId("");
     } catch (err) {
+      setError("Failed to add student");
       console.error(err);
-      alert("Failed to add student");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!course) return <p>Loading course...</p>;
+  if (!course) return <div className="loading"><span className="spinner"></span>Loading course...</div>;
 
   return (
-    <div>
-      <h2>Manage Students for {course.title}</h2>
-
-      <h3>Current Students</h3>
-      <ul>
-        {course.students.map((student) => (
-          <li key={student.id}>{student.username}</li>
-        ))}
-      </ul>
-
-      <h3>Add Student</h3>
-      <form onSubmit={handleAddStudent}>
-        <select
-          value={selectedStudentId}
-          onChange={(e) => setSelectedStudentId(e.target.value)}
-        >
-          <option value="">Select a student</option>
-          {allStudents
-            .filter((s) => !course.students.some((cs) => cs.id === s.id)) 
-            .map((student) => (
-              <option key={student.id} value={student.id}>
-                {student.username}
-              </option>
-            ))}
-        </select>
-        <button type="submit">Add</button>
+    <div className="form-container">
+      <h2 className="form-title">Manage Students for {course.title}</h2>
+      {error && <p className="error">{error}</p>}
+      {loading && (
+        <div className="loading">
+          <span className="spinner"></span>Loading...
+        </div>
+      )}
+      <h3 className="section-title">Current Students</h3>
+      {course.students.length === 0 ? (
+        <p className="no-items">No students enrolled</p>
+      ) : (
+        <ul className="item-list">
+          {course.students.map((student) => (
+            <li key={student.id} className="item">
+              <span className="item-text">{student.username}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h3 className="section-title">Add Student</h3>
+      <form onSubmit={handleAddStudent} className="form">
+        <div className="form-group">
+          <label className="form-label">Select Student</label>
+          <select
+            className="form-select"
+            value={selectedStudentId}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">Select a student</option>
+            {allStudents
+              .filter((s) => !course.students.some((cs) => cs.id === s.id))
+              .map((student) => (
+                <option key={student.id} value={student.id}>
+                  {student.username}
+                </option>
+              ))}
+          </select>
+        </div>
+        <div className="form-actions">
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-primary btn-small"
+          >
+            Add
+          </button>
+        </div>
       </form>
     </div>
   );
