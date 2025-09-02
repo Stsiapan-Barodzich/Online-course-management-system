@@ -2,10 +2,13 @@ import { useState } from "react";
 import axios from "axios";
 import { useAuth } from "@Contexts/AuthContext";
 
+const BASE_URL = "http://localhost:8000"; 
+
 function EditLectureForm({ lecture, onClose, onUpdate }) {
   const { authTokens } = useAuth();
   const [topic, setTopic] = useState(lecture.topic);
   const [file, setFile] = useState(null);
+  const [currentPresentation, setCurrentPresentation] = useState(lecture.presentation || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,22 +18,44 @@ function EditLectureForm({ lecture, onClose, onUpdate }) {
 
     const formData = new FormData();
     formData.append("topic", topic);
-    if (file) formData.append("presentation", file);
+    if (file) {
+      formData.append("presentation", file);
+    } else if (!currentPresentation) {
+      formData.append("presentation", "");
+    }
 
     try {
-      const res = await axios.put(`/api/v1/lectures/${lecture.id}/`, formData, {
+      const res = await axios.patch(`${BASE_URL}/api/v1/lectures/${lecture.id}/`, formData, {
         headers: {
-          Authorization: `Bearer ${authTokens.access}`,
+          Authorization: `Bearer ${authTokens?.access}`,
           "Content-Type": "multipart/form-data",
         },
       });
       onUpdate(res.data);
       onClose();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update lecture");
+      console.error("Error updating lecture:", err.response || err);
+      let errorMessage = "Failed to update lecture";
+      if (err.response) {
+        if (err.response.status === 401) {
+          errorMessage = "Unauthorized: Please log in again.";
+        } else if (err.response.status === 403) {
+          errorMessage = "Forbidden: You do not have permission to edit this lecture.";
+        } else if (err.response.status === 404) {
+          errorMessage = `Lecture with ID ${lecture.id} not found. Please check the lecture ID or server configuration.`;
+        } else if (err.response.data) {
+          errorMessage = err.response.data.detail || JSON.stringify(err.response.data);
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemovePresentation = () => {
+    setCurrentPresentation(null);
+    setFile(null);
   };
 
   return (
@@ -55,7 +80,14 @@ function EditLectureForm({ lecture, onClose, onUpdate }) {
           />
         </div>
         <div className="form-group">
-          <label className="form-label">Presentation (optional)</label>
+          <label className="form-label">Presentation</label>
+          {currentPresentation && !file ? (
+            <div className="current-presentation">
+              <p>Current file: {currentPresentation.split("/").pop()}</p>
+            </div>
+          ) : (
+            <p>{file ? file.name : "No file selected"}</p>
+          )}
           <input
             type="file"
             className="form-file"

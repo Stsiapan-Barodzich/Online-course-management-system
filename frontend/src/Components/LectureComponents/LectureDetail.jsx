@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@Contexts/AuthContext";
 import AddHomeworkForm from "../HomeworkComponents/AddHomeworkForm.jsx";
@@ -7,10 +7,11 @@ import EditHomeworkForm from "../HomeworkComponents/EditHomeworkForm.jsx";
 import SubmissionList from "../SubmissionComponents/SubmissionList.jsx";
 import AddSubmissionForm from "../SubmissionComponents/AddSubmissionForm.jsx";
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = "http://localhost:8000";  
+const MEDIA_URL = "http://localhost:8000/media/";  
 
 function LectureDetail() {
-  const { lectureId } = useParams();
+  const { courseId, lectureId } = useParams();
   const { authTokens, user } = useAuth();
   const [lecture, setLecture] = useState(null);
   const [homeworks, setHomeworks] = useState([]);
@@ -21,6 +22,7 @@ function LectureDetail() {
   const [showMySubmissions, setShowMySubmissions] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const headers = { Authorization: `Bearer ${authTokens?.access}` };
 
@@ -35,6 +37,7 @@ function LectureDetail() {
           `${BASE_URL}/api/v1/lectures/${lectureId}/`,
           { headers }
         );
+  
         setLecture(resLecture.data);
 
         const resHomework = await axios.get(
@@ -52,6 +55,36 @@ function LectureDetail() {
 
     loadLectureAndHomework();
   }, [authTokens, lectureId]);
+
+  const handleDownload = async (filePath, fileName = "presentation.pdf") => {
+    try {
+      const fileUrl = filePath.startsWith("http")
+        ? filePath
+        : `${MEDIA_URL}${filePath.replace(/^\/+/, "")}`; 
+
+      const response = await axios.get(fileUrl, {
+        responseType: "blob",
+        headers: {
+          Authorization: `Bearer ${authTokens?.access}`,
+        },
+      });
+
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"] || "application/octet-stream",
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error:", err);
+      setError("Failed to download presentation. Check console for details.");
+    }
+  };
 
   const handleDelete = async (hwId) => {
     if (!window.confirm("Delete this homework?")) return;
@@ -91,7 +124,28 @@ function LectureDetail() {
 
   return (
     <div className="lecture-detail-container">
+      <button
+        onClick={() => navigate(`/courses/${courseId}`)}
+        className="btn-back-prev"
+      >
+        To Previous
+      </button>
       <h2 className="form-title">Lecture: {lecture.topic}</h2>
+      {lecture.presentation ? (
+        <button
+          onClick={() =>
+            handleDownload(
+              lecture.presentation,
+              lecture.presentation.split("/").pop() || "presentation.pdf"
+            )
+          }
+          className="btn btn-primary btn-small"
+        >
+          Download Presentation
+        </button>
+      ) : (
+        <p className="no-items">No presentation available</p>
+      )}
       {error && <p className="error">{error}</p>}
       {loading && (
         <div className="loading">
@@ -132,54 +186,70 @@ function LectureDetail() {
               <div className="item-content">
                 <div className="item-info">
                   <span className="item-text">{hw.text}</span>
+                  <div>{hw.description}</div>
                 </div>
-                <div>{hw.description}</div>
-                <div className="item-actions">
-                  {user?.role === "TEACHER" && (
-                    <>
-                      <button
-                        className="btn btn-warning btn-small"
-                        onClick={() => handleEdit(hw)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-danger btn-small"
-                        onClick={() => handleDelete(hw.id)}
-                      >
-                        Delete
-                      </button>
-                      <button
-                        className="btn btn-success btn-small"
-                        onClick={() =>
-                          setOpenSubmissions(openSubmissions === hw.id ? null : hw.id)
-                        }
-                      >
-                        {openSubmissions === hw.id ? "Hide Submissions" : "Submissions"}
-                      </button>
-                    </>
-                  )}
-                  {user?.role === "STUDENT" && (
-                    <>
-                      <button
-                        className="btn btn-primary btn-small"
-                        onClick={() =>
-                          setOpenAddSubmission(openAddSubmission === hw.id ? null : hw.id)
-                        }
-                      >
-                        {openAddSubmission === hw.id ? "Cancel Submission" : "Add Submission"}
-                      </button>
-                      <button
-                        className="btn btn-info btn-small"
-                        onClick={() =>
-                          setShowMySubmissions(showMySubmissions === hw.id ? null : hw.id)
-                        }
-                      >
-                        {showMySubmissions === hw.id ? "Hide My Submissions" : "My Submissions"}
-                      </button>
-                    </>
-                  )}
-                </div>
+                {user?.role === "TEACHER" && (
+                  <div
+                    className="item-actions"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: "8px",
+                      marginTop: "8px",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <button
+                      className="btn btn-warning btn-small"
+                      onClick={() => handleEdit(hw)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-danger btn-small"
+                      onClick={() => handleDelete(hw.id)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      className="btn btn-success btn-small"
+                      onClick={() =>
+                        setOpenSubmissions(openSubmissions === hw.id ? null : hw.id)
+                      }
+                    >
+                      {openSubmissions === hw.id ? "Hide Submissions" : "Submissions"}
+                    </button>
+                  </div>
+                )}
+                {user?.role === "STUDENT" && (
+                  <div
+                    className="item-actions"
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      gap: "8px",
+                      marginTop: "8px",
+                      justifyContent: "flex-start",
+                    }}
+                  >
+                    <button
+                      className="btn btn-primary btn-small"
+                      onClick={() =>
+                        setOpenAddSubmission(openAddSubmission === hw.id ? null : hw.id)
+                      }
+                    >
+                      {openAddSubmission === hw.id ? "Cancel Submission" : "Add Submission"}
+                    </button>
+                    <button
+                      className="btn btn-info btn-small"
+                      onClick={() =>
+                        setShowMySubmissions(showMySubmissions === hw.id ? null : hw.id)
+                      }
+                    >
+                      {showMySubmissions === hw.id ? "Hide My Submissions" : "My Submissions"}
+                    </button>
+                  </div>
+                )}
                 <div className="sub-content">
                   {openSubmissions === hw.id && <SubmissionList homeworkId={hw.id} />}
                   {openAddSubmission === hw.id && (

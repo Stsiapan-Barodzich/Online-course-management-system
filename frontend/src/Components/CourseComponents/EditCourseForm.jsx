@@ -6,6 +6,7 @@ import { useAuth } from "@Contexts/AuthContext";
 function EditCourseForm() {
   const { courseId } = useParams();
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState(""); // Добавляем состояние для description
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ function EditCourseForm() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTitle(res.data.title);
+      setDescription(res.data.description || ""); // Загружаем description
     } catch (err) {
       setError("Failed to load course");
       console.error(err);
@@ -41,13 +43,25 @@ function EditCourseForm() {
       setError(null);
       await axios.put(
         `http://localhost:8000/api/v1/courses/${courseId}/`,
-        { title },
+        { title, description }, // Добавляем description в тело запроса
         { headers: { Authorization: `Bearer ${token}` } }
       );
       navigate("/courses");
     } catch (err) {
-      setError("Failed to update course");
-      console.error(err);
+      console.error("Error updating course:", err.response || err);
+      let errorMessage = "Failed to update course";
+      if (err.response) {
+        if (err.response.status === 401) {
+          errorMessage = "Unauthorized: Please log in again.";
+        } else if (err.response.status === 403) {
+          errorMessage = "Forbidden: You do not have permission to edit this course.";
+        } else if (err.response.status === 404) {
+          errorMessage = `Course with ID ${courseId} not found.`;
+        } else if (err.response.data) {
+          errorMessage = err.response.data.detail || JSON.stringify(err.response.data);
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,6 +90,16 @@ function EditCourseForm() {
             onChange={(e) => setTitle(e.target.value)}
             disabled={loading}
             required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Description</label>
+          <textarea
+            className="form-input"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            disabled={loading}
+            rows="4"
           />
         </div>
         <div className="form-actions">

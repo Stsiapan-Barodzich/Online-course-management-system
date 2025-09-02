@@ -8,13 +8,12 @@ class CourseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'title', 'teacher', 'students']
+        fields = ['id', 'title', 'teacher', 'students', 'description']
 
-    def create(self, validated_data):
-        validated_data['teacher'] = self.context['request'].user
-        return super().create(validated_data)
+    
 
 class LectureSerializer(serializers.ModelSerializer):
+    presentation = serializers.FileField(use_url=True, required=False)
     class Meta:
         model = Lecture
         fields = ['id', 'course', 'topic', 'presentation']
@@ -33,14 +32,12 @@ class GradeSerializer(serializers.ModelSerializer):
         fields = ['id', 'submission', 'teacher', 'score', 'comment', 'graded_at']
 
     def validate(self, data):
-        # Проверяем, что для этого submission еще нет оценки
         submission = data.get('submission')
         if submission and Grade.objects.filter(submission=submission).exists():
             raise serializers.ValidationError({
                 'submission': 'Grade for this submission already exists.'
             })
         
-        # Проверяем score
         score = data.get('score')
         if score is not None and (score < 0 or score > 100):
             raise serializers.ValidationError({
@@ -49,7 +46,6 @@ class GradeSerializer(serializers.ModelSerializer):
         
         return data
 
-# Сериализатор для сабмишенов с вложенной оценкой
 class SubmissionSerializer(serializers.ModelSerializer):
     student = UserSerializer(read_only=True)
     grade = GradeSerializer(read_only=True)
@@ -58,7 +54,4 @@ class SubmissionSerializer(serializers.ModelSerializer):
         model = Submission
         fields = ['id', 'homework', 'student', 'content', 'submitted_at', 'grade']
 
-    def create(self, validated_data):
-        validated_data['student'] = self.context['request'].user
-        return super().create(validated_data)
-        
+    

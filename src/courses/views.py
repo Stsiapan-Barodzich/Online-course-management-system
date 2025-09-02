@@ -75,7 +75,6 @@ class CourseViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({"detail": "Student not found"}, status=status.HTTP_404_NOT_FOUND)
 
-# Дополнительные ViewSet для других моделей
 class LectureViewSet(viewsets.ModelViewSet):
     serializer_class = LectureSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -103,7 +102,6 @@ class HomeworkViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = Homework.objects.all()
 
-        # фильтруем по роли
         if user.is_teacher():
             qs = qs.filter(lecture__course__teacher=user)
         elif user.is_student():
@@ -111,7 +109,6 @@ class HomeworkViewSet(viewsets.ModelViewSet):
         else:
             return Homework.objects.none()
 
-        # фильтруем по lecture query param
         lecture_id = self.request.GET.get("lecture")
         if lecture_id:
             qs = qs.filter(lecture_id=lecture_id)
@@ -144,12 +141,10 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         else:
             return Submission.objects.none()
 
-        # фильтрация по lecture
         lecture_id = self.request.GET.get("lecture")
         if lecture_id:
             qs = qs.filter(homework__lecture_id=lecture_id)
 
-        # фильтрация по homework
         homework_id = self.request.GET.get("homework")
         if homework_id:
             qs = qs.filter(homework_id=homework_id)
@@ -167,23 +162,6 @@ class GradeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Grade.objects.all()
 
-    def create(self, request, *args, **kwargs):
-        print("=== GRADE CREATE REQUEST ===")
-        print("User:", request.user)
-        print("User role:", request.user.role)
-        print("Request data:", request.data)
-        print("Request content type:", request.content_type)
-        try:
-            response = super().create(request, *args, **kwargs)
-            print("Response status:", response.status_code)
-            print("Response data:", response.data)
-            return response
-        except Exception as e:
-            print("ERROR:", str(e))
-            print("Error type:", type(e))
-            import traceback
-            traceback.print_exc()
-            raise
     def get_queryset(self):
         user = self.request.user
         if user.is_teacher():

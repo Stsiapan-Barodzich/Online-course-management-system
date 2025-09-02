@@ -8,6 +8,7 @@ def default_deadline():
 
 class Course(models.Model):
     title = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'TEACHER'})
     students = models.ManyToManyField(User, related_name='courses', limit_choices_to={'role': 'STUDENT'})
 

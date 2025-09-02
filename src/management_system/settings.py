@@ -7,13 +7,14 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", False) == "True"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+
+MEDIA_URL = "/media/" 
+MEDIA_ROOT = os.path.join(BASE_DIR,"media")  
 
 
 REST_FRAMEWORK = {
@@ -22,8 +23,8 @@ REST_FRAMEWORK = {
     ),
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Токен действителен 1 час
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    # Refresh токен действителен 1 день
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), 
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),    
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
 }
@@ -50,6 +51,7 @@ AUTH_USER_MODEL = "users.User"
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -61,6 +63,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = "management_system.urls"
 

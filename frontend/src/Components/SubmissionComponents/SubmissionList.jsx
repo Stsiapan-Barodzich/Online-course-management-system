@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@Contexts/AuthContext";
 import AddGradeForm from "../GradeComponents/AddGradeForm";
+import EditGradeForm from "../GradeComponents/EditGradeForm";
 
 function SubmissionList() {
   const { courseId, lectureId } = useParams();
@@ -23,14 +24,15 @@ function SubmissionList() {
       navigate("/login/");
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
       const res = await axios.get(
         `http://localhost:8000/api/v1/submissions/?lecture=${lectureId}`,
         {
-          headers: { Authorization: `Bearer ${authTokens.access}` },
+          headers: {
+            Authorization: `Bearer ${authTokens.access}`,
+          },
         }
       );
       setSubmissions(res.data);
@@ -60,7 +62,6 @@ function SubmissionList() {
       setEditError("Content is required");
       return;
     }
-
     try {
       const res = await axios.put(
         `http://localhost:8000/api/v1/submissions/${submissionId}/`,
@@ -77,7 +78,9 @@ function SubmissionList() {
       );
       setSubmissions((prev) =>
         prev.map((sub) =>
-          sub.id === submissionId ? { ...sub, content: res.data.content, submitted_at: res.data.submitted_at } : sub
+          sub.id === submissionId
+            ? { ...sub, content: res.data.content, submitted_at: res.data.submitted_at }
+            : sub
         )
       );
       setShowEditForm((prev) => ({ ...prev, [submissionId]: false }));
@@ -91,12 +94,13 @@ function SubmissionList() {
 
   const handleDeleteSubmission = async (submissionId) => {
     if (!window.confirm("Are you sure you want to delete this submission?")) return;
-
     try {
       await axios.delete(
         `http://localhost:8000/api/v1/submissions/${submissionId}/`,
         {
-          headers: { Authorization: `Bearer ${authTokens.access}` },
+          headers: {
+            Authorization: `Bearer ${authTokens.access}`,
+          },
         }
       );
       setSubmissions((prev) => prev.filter((sub) => sub.id !== submissionId));
@@ -106,13 +110,16 @@ function SubmissionList() {
     }
   };
 
-  if (loading) return <div className="loading"><span className="spinner"></span>Loading submissions...</div>;
+  if (loading)
+    return (
+      <div className="loading">
+        <span className="spinner"></span>Loading submissions...
+      </div>
+    );
 
   return (
     <div className="submission-list-container">
-      <h2 className="form-title">
-        Submissions (Course {courseId}, Lecture {lectureId})
-      </h2>
+      <h2 className="form-title">Submissions</h2>
       {error && <p className="error">{error}</p>}
       {submissions.length === 0 ? (
         <p className="no-items">No submissions yet</p>
@@ -132,7 +139,17 @@ function SubmissionList() {
                   <strong>Content:</strong>
                   <div className="item-text">{sub.content}</div>
                 </div>
+                {/* Display grade for student */}
                 {user?.role === "STUDENT" && sub.grade && showGrade[sub.id] && (
+                  <div className="grade-info">
+                    <strong>Score:</strong> {sub.grade.score ?? "—"} <br />
+                    <strong>Comment:</strong> {sub.grade.comment || "—"} <br />
+                    <strong>Graded at:</strong>{" "}
+                    {new Date(sub.grade.graded_at).toLocaleString()}
+                  </div>
+                )}
+                {/* Display grade for teacher */}
+                {user?.role === "TEACHER" && sub.grade && (
                   <div className="grade-info">
                     <strong>Score:</strong> {sub.grade.score ?? "—"} <br />
                     <strong>Comment:</strong> {sub.grade.comment || "—"} <br />
@@ -167,15 +184,31 @@ function SubmissionList() {
                 )}
                 {user?.role === "TEACHER" && showGradeForm[sub.id] && (
                   <div className="grade-form">
-                    <AddGradeForm
-                      submissionId={sub.id}
-                      onGradeAdded={(grade) => handleGradeAdded(sub.id, grade)}
-                    />
+                    {sub.grade ? (
+                      <EditGradeForm
+                        grade={sub.grade}
+                        onGradeUpdated={(grade) => handleGradeAdded(sub.id, grade)}
+                      />
+                    ) : (
+                      <AddGradeForm
+                        submissionId={sub.id}
+                        onGradeAdded={(grade) => handleGradeAdded(sub.id, grade)}
+                      />
+                    )}
                   </div>
                 )}
               </div>
-              <div className="item-actions">
-                {user?.role === "TEACHER" && sub.id && (
+              <div
+                className="item-actions"
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "8px",
+                  marginTop: "8px",
+                  justifyContent: "flex-start",
+                }}
+              >
+                {user?.role === "TEACHER" && (
                   <button
                     className="btn btn-primary btn-small"
                     onClick={() =>
@@ -185,7 +218,7 @@ function SubmissionList() {
                       }))
                     }
                   >
-                    {showGradeForm[sub.id] ? "Cancel" : "Grade"}
+                    {sub.grade ? "Edit Grade" : "Grade"}
                   </button>
                 )}
                 {user?.role === "STUDENT" && sub.student?.id === user.id && (
@@ -231,6 +264,7 @@ function SubmissionList() {
           ))}
         </ul>
       )}
+      
     </div>
   );
 }
