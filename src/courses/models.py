@@ -18,7 +18,7 @@ class Lecture(models.Model):
     presentation = models.FileField(upload_to='presentations/')
 
 class Homework(models.Model):
-    lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE)
+    lecture = models.OneToOneField(Lecture, on_delete=models.CASCADE, related_name="homework")
     text = models.TextField()
     description = models.TextField(null=True, blank=True)
     deadline = models.DateField(default=default_deadline)

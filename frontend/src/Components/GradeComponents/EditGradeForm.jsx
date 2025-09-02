@@ -96,7 +96,7 @@ function EditGradeForm({ grade, onGradeUpdated }) {
           </button>
           <button
             type="button"
-            onClick={() => onGradeUpdated(grade)} // Закрытие без сохранения
+            onClick={() => onGradeUpdated(grade)} 
             className="btn btn-danger btn-small"
             disabled={loading}
           >

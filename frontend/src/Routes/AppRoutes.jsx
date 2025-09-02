@@ -26,7 +26,7 @@ import EditHomeworkForm from '@Components/HomeworkComponents/EditHomeworkForm.js
 import SubmissionList from '@Components/SubmissionComponents/SubmissionList.jsx'; 
 import AddSubmissionForm from '@Components/SubmissionComponents/AddSubmissionForm.jsx'; 
 
-import GradeList from '@Components/GradeComponents/GradeList.jsx';              
+              
 import GradeForm from '@Components/GradeComponents/AddGradeForm.jsx';                
             
 
@@ -66,7 +66,6 @@ function AppRoutes() {
             <Route path="/courses/:courseId/lectures/:lectureId/homework/:homeworkId/edit" element={<EditHomeworkForm />} />
 
             <Route path="/courses/:courseId/lectures/:lectureId/submissions" element={<SubmissionList />} />
-            <Route path="/courses/:courseId/lectures/:lectureId/grades" element={<GradeList />} />
             <Route path="/grades/:submissionId/edit" element={<GradeForm />} />
           </Route>
 
