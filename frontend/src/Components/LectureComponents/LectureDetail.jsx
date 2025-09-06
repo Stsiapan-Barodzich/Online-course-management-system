@@ -39,7 +39,6 @@ function LectureDetail() {
         );
         setLecture(resLecture.data);
 
-        // Проверяем наличие домашнего задания
         try {
           const resHomework = await axios.get(
             `${BASE_URL}/api/v1/homework/?lecture=${lectureId}`,

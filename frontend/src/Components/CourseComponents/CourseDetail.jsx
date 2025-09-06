@@ -39,16 +39,17 @@ const CourseDetail = () => {
 
   const loadLectures = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/api/v1/lectures/`, { headers });
-      const courseLectures = res.data.filter(
-        (lecture) => lecture.course === parseInt(courseId)
+      const res = await axios.get(
+        `${BASE_URL}/api/v1/courses/${courseId}/lectures/`,
+        { headers }
       );
-      setLectures(courseLectures);
+      setLectures(res.data);
     } catch (err) {
       console.error(err);
       alert("Failed to load lectures");
     }
   };
+
 
   const loadStudents = async () => {
     try {
